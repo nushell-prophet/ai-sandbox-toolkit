@@ -8,6 +8,7 @@ const repos = {
     numd: "https://github.com/nushell-prophet/numd.git"
     claude-nu: "https://github.com/nushell-prophet/claude-nu.git"
     nu-cmd-stack: "https://github.com/nushell-prophet/nu-cmd-stack.git"
+    topiary-nushell: "https://github.com/blindFS/topiary-nushell.git"
 }
 
 def remote-head-branch []: nothing -> string {
@@ -228,4 +229,123 @@ export def "main history import" [
         ]
     } | ignore
     print $"Imported ($items | length) history items"
+}
+
+export def "main topiary" [] { help "main topiary" }
+
+# Install topiary formatter with nushell support.
+#
+# Installs the topiary binary via brew, clones the topiary-nushell
+# grammar/queries repo, and symlinks config into ~/.config/topiary/.
+# Safe to re-run — skips steps already done.
+export def "main topiary install" []: nothing -> nothing {
+    # 1. Install topiary binary
+    if (which topiary | is-empty) {
+        print "  Installing topiary via brew..."
+        ^brew install topiary
+    } else {
+        print $"  (ansi green)topiary(ansi reset): already installed"
+    }
+
+    # 2. Clone topiary-nushell repo
+    let repo_dir = $nu.home-dir | path join git topiary-nushell
+    if not ($repo_dir | path exists) {
+        print "  Cloning topiary-nushell..."
+        ^git clone ($repos | get topiary-nushell) $repo_dir
+    } else {
+        print $"  (ansi green)topiary-nushell(ansi reset): already cloned"
+    }
+
+    # 3. Symlink config files
+    let config_dir = $nu.home-dir | path join .config topiary
+    mkdir $config_dir
+    mkdir ($config_dir | path join queries)
+
+    let links = {
+        languages.ncl: ([$repo_dir languages.ncl] | path join)
+        "queries/nu.scm": ([$repo_dir queries nu.scm] | path join)
+    }
+
+    $links | items {|rel target|
+        let link = $config_dir | path join $rel
+        if ($link | path type) == "symlink" {
+            print $"  (ansi green)($rel)(ansi reset): symlink exists"
+        } else {
+            rm -f $link
+            ^ln -s $target $link
+            print $"  (ansi cyan)($rel)(ansi reset): symlinked"
+        }
+    } | ignore
+
+    # 4. Build tree-sitter grammar for topiary cache.
+    #    topiary prefetch uses its own HTTP client which may fail behind proxies,
+    #    so we clone via git and compile the .so ourselves.
+    let rev = open ($repo_dir | path join languages.ncl)
+        | parse --regex 'rev\s*=\s*"(?P<rev>[0-9a-f]+)"'
+        | get rev.0
+    let cache_dir = $nu.home-dir | path join .cache topiary nu
+    let so_path = $cache_dir | path join $"($rev).so"
+    if ($so_path | path exists) {
+        print $"  (ansi green)grammar(ansi reset): cached"
+    } else {
+        print "  Building tree-sitter-nu grammar..."
+        let tmp = mktemp -d
+        ^git clone --depth 1 https://github.com/nushell/tree-sitter-nu.git $tmp
+        ^gcc -shared -fPIC -o ($tmp | path join parser.so) ($tmp | path join src parser.c) ($tmp | path join src scanner.c) $"-I($tmp | path join src)"
+        mkdir $cache_dir
+        mv ($tmp | path join parser.so) $so_path
+        rm -rf $tmp
+        print $"  (ansi cyan)grammar(ansi reset): built and cached"
+    }
+
+    print "  topiary nushell formatter ready"
+}
+
+export def "main rust" [] { help "main rust" }
+
+# Install Rust via rustup.
+#
+# Safe to re-run — skips if rustc is already available.
+export def "main rust install" []: nothing -> nothing {
+    if not (which rustc | is-empty) {
+        print $"  (ansi green)rust(ansi reset): already installed"
+        return
+    }
+    print "  Installing Rust via rustup..."
+    ^sh -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+    $env.PATH = ($env.PATH | prepend ($nu.home-dir | path join .cargo bin))
+    print $"  (ansi green)rust(ansi reset): installed"
+}
+
+export def "main polars" [] { help "main polars" }
+
+# Install nu_plugin_polars and register it with Nushell.
+#
+# Requires Rust (use `toolkit rust install` first).
+# Compiles from source — may take several minutes.
+# Safe to re-run — skips steps already done.
+export def "main polars install" []: nothing -> nothing {
+    let cargo_bin = $nu.home-dir | path join .cargo bin
+
+    # Ensure cargo is available
+    if (which cargo | is-empty) {
+        $env.PATH = ($env.PATH | prepend $cargo_bin)
+        if (which cargo | is-empty) {
+            error make { msg: "cargo not found — run `toolkit rust install` first" }
+        }
+    }
+
+    let plugin_path = $cargo_bin | path join nu_plugin_polars
+    if ($plugin_path | path exists) {
+        print $"  (ansi green)nu_plugin_polars(ansi reset): already installed"
+    } else {
+        print "  Installing nu_plugin_polars (this may take several minutes)..."
+        ^cargo install nu_plugin_polars
+        print $"  (ansi green)nu_plugin_polars(ansi reset): installed"
+    }
+
+    # Register the plugin with Nushell
+    print "  Registering plugin..."
+    plugin add $plugin_path
+    print $"  (ansi green)polars plugin(ansi reset): registered — restart Nushell or run: plugin use polars"
 }
