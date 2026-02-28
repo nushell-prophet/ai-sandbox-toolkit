@@ -33,8 +33,9 @@ export def install []: nothing -> nothing {
     ^git checkout $tag
 
     print "  Building zellij without web_server_capability (this may take a while)..."
-    # -j 1 to avoid OOM kill — release LTO builds are very memory-hungry
-    ^cargo build --release -j 1 --no-default-features --features plugins_from_target,vendored_curl
+    # Use thin LTO instead of full — nearly same performance, much less memory.
+    # Full LTO (zellij default) OOM-kills the linker in sandbox VMs.
+    ^cargo build --release -j 1 --no-default-features --features plugins_from_target,vendored_curl --config 'profile.release.lto="thin"'
 
     # Remove brew-installed zellij if present
     if (^brew list zellij | complete).exit_code == 0 {
