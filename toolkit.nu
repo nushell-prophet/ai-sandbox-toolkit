@@ -314,6 +314,18 @@ export def "main rust install" []: nothing -> nothing {
     print "  Installing Rust via rustup..."
     ^sh -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
     $env.PATH = ($env.PATH | prepend ($nu.home-dir | path join .cargo bin))
+
+    # rustup adds `source $"($nu.home-path)/.cargo/env.nu"` to config.nu,
+    # which breaks nushell — `home-path` doesn't exist (it's `home-dir`).
+    # Remove it. (2026-02-28)
+    let config = $nu.config-path
+    let content = open --raw $config
+    let bad_line = 'source $"($nu.home-path)/.cargo/env.nu"'
+    if $bad_line in $content {
+        $content | str replace $"($bad_line)\n" '' | save -f $config
+        print $"  (ansi yellow)rust(ansi reset): removed erroneous line from config.nu"
+    }
+
     print $"  (ansi green)rust(ansi reset): installed"
 }
 
