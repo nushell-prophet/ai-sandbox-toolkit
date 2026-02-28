@@ -20,7 +20,7 @@ def remote-head-branch []: nothing -> string {
 }
 
 # Convert vendor directories to git repos if needed, pull latest from all
-export def "main sync-repos" [--force (-f)] {
+export def sync-repos [--force (-f)] {
     let base = $nu.home-dir | path join git
 
     $repos | items {|name url|
@@ -87,12 +87,12 @@ def non-git-subdirs []: nothing -> list<string> {
     | get name
 }
 
-export def "main mount" [] { help "main mount" }
+export def mount [] { help mount }
 
 # Idempotent git init for multi-repo workspaces.
 # Registers git subdirs as submodules, ignores non-git subdirs.
 # Safe to re-run after adding new dirs.
-export def "main mount init" []: nothing -> nothing {
+export def "mount init" []: nothing -> nothing {
     # sandbox mounts have different ownership — trust all dirs
     ^git config --global safe.directory '*'
 
@@ -157,7 +157,7 @@ export def "main mount init" []: nothing -> nothing {
     print $'Registered ($new_repos | length) submodules: ($new_repos | str join ", ")'
 }
 
-export def "main history" [] { help "main history" }
+export def history [] { help history }
 
 const history_db = '~/.config/nushell/history.sqlite3'
 const history_columns = "command_line, cwd, start_timestamp, duration_ms, exit_status"
@@ -175,7 +175,7 @@ def sandbox-state-path [filename: string]: nothing -> path {
 # interactive shell, `nu -c`, scripts, or the Bash tool.
 # No login shell (`nu -l`) required.
 # Each export gets a timestamped filename; latest symlink always points to the most recent.
-export def "main history export" [
+export def "history export" [
     path?: path  # Output file (default: ~/mounted/sandbox-state/history-<timestamp>.nuon)
 ]: nothing -> nothing {
     let out = $path | default (sandbox-state-path $"history-(date now | format date '%Y%m%d-%H%M%S').nuon")
@@ -202,7 +202,7 @@ export def "main history export" [
 # The file should contain a table with columns:
 # command_line, cwd, start_timestamp, duration_ms, exit_status.
 # Without a path, imports from the latest export via the history-latest.nuon symlink.
-export def "main history import" [
+export def "history import" [
     path?: path  # Input file (default: ~/mounted/sandbox-state/history-latest.nuon)
 ]: nothing -> nothing {
     let src = $path | default (sandbox-state-path 'history-latest.nuon')
@@ -231,14 +231,14 @@ export def "main history import" [
     print $"Imported ($items | length) history items"
 }
 
-export def "main topiary" [] { help "main topiary" }
+export def topiary [] { help topiary }
 
 # Install topiary formatter with nushell support.
 #
 # Installs the topiary binary via brew, clones the topiary-nushell
 # grammar/queries repo, and symlinks config into ~/.config/topiary/.
 # Safe to re-run — skips steps already done.
-export def "main topiary install" []: nothing -> nothing {
+export def "topiary install" []: nothing -> nothing {
     # 1. Install topiary binary
     if (which topiary | is-empty) {
         print "  Installing topiary via brew..."
@@ -301,12 +301,12 @@ export def "main topiary install" []: nothing -> nothing {
     print "  topiary nushell formatter ready"
 }
 
-export def "main rust" [] { help "main rust" }
+export def rust [] { help rust }
 
 # Install Rust via rustup.
 #
 # Safe to re-run — skips if rustc is already available.
-export def "main rust install" []: nothing -> nothing {
+export def "rust install" []: nothing -> nothing {
     if not (which rustc | is-empty) {
         print $"  (ansi green)rust(ansi reset): already installed"
         return
@@ -329,14 +329,14 @@ export def "main rust install" []: nothing -> nothing {
     print $"  (ansi green)rust(ansi reset): installed"
 }
 
-export def "main polars" [] { help "main polars" }
+export def polars [] { help polars }
 
 # Install nu_plugin_polars and register it with Nushell.
 #
 # Requires Rust (use `toolkit rust install` first).
 # Compiles from source — may take several minutes.
 # Safe to re-run — skips steps already done.
-export def "main polars install" []: nothing -> nothing {
+export def "polars install" []: nothing -> nothing {
     let cargo_bin = $nu.home-dir | path join .cargo bin
 
     # Ensure cargo is available
@@ -362,7 +362,7 @@ export def "main polars install" []: nothing -> nothing {
     print $"  (ansi green)polars plugin(ansi reset): registered — restart Nushell or run: plugin use polars"
 }
 
-export def "main zellij" [] { help "main zellij" }
+export def zellij [] { help zellij }
 
 # Build zellij from source without web session sharing.
 #
@@ -370,7 +370,7 @@ export def "main zellij" [] { help "main zellij" }
 # with --no-default-features to exclude `web_server_capability`.
 # Requires Rust (use `toolkit rust install` first).
 # Safe to re-run — pulls latest tag and rebuilds.
-export def "main zellij install" []: nothing -> nothing {
+export def "zellij install" []: nothing -> nothing {
     let cargo_bin = $nu.home-dir | path join .cargo bin
 
     # Ensure cargo is available
