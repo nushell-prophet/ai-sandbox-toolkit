@@ -33,10 +33,23 @@ export def install []: nothing -> nothing {
     ^git checkout $tag
 
     print "  Building zellij without web_server_capability (this may take a while)..."
-    ^cargo build --release --no-default-features --features plugins_from_target,vendored_curl
+    # -j 1 to avoid OOM kill — release LTO builds are very memory-hungry
+    ^cargo build --release -j 1 --no-default-features --features plugins_from_target,vendored_curl
+
+    # Remove brew-installed zellij if present
+    if (^brew list zellij | complete).exit_code == 0 {
+        print "  Removing brew-installed zellij..."
+        ^brew uninstall zellij
+    }
 
     let bin = $repo_dir | path join target release zellij
     let dest = $cargo_bin | path join zellij
     cp $bin $dest
+
+    # Ensure ~/.cargo/bin is in PATH
+    if $cargo_bin not-in $env.PATH {
+        $env.PATH = ($env.PATH | prepend $cargo_bin)
+    }
+
     print $"  (ansi green)zellij(ansi reset): ($tag) installed to ($dest)"
 }
