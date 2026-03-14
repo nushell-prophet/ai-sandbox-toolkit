@@ -10,6 +10,18 @@ def sandbox-state-path [filename: string]: nothing -> path {
 
 export def main [] { help history }
 
+# Seed nushell history with useful commands from the bundled seed file.
+#
+# Initializes the history database if needed, then imports history-seed.nuon
+# from the toolkit directory.
+export def seed []: nothing -> nothing {
+    let seed_file = ($env.CURRENT_FILE | path dirname | path join 'history-seed.nuon')
+    if not ($seed_file | path exists) {
+        error make { msg: $"seed file not found: ($seed_file)" }
+    }
+    import $seed_file
+}
+
 # Export nushell history to a nuon file.
 #
 # Reads the sqlite database directly, so it works from any context:
@@ -98,5 +110,6 @@ export def import [
         ]
     } | ignore
 
-    print $"Imported ($new_items | length) new entries (($items | length - $new_items | length) duplicates skipped). History: ($sorted | length) total, sorted by timestamp"
+    let skipped = ($items | length) - ($new_items | length)
+    print $"Imported ($new_items | length) new entries, ($skipped) duplicates skipped. History: ($sorted | length) total, sorted by timestamp"
 }
