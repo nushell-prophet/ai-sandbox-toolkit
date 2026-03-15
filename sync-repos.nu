@@ -24,10 +24,7 @@ export def main [--force (-f)] {
     $repos
     | items {|name url|
         let dir = $base | path join $name
-        if not ($dir | path exists) {
-            print $"  (ansi yellow)($name)(ansi reset): not found, skipping"
-            return
-        }
+        mkdir $dir
 
         if ($dir | path join '.git' | path exists) {
             cd $dir
