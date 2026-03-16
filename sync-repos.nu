@@ -5,7 +5,7 @@ const repos = {
     nu-cmd-stack: "https://github.com/nushell-prophet/nu-cmd-stack.git"
     nu-goodies: "https://github.com/nushell-prophet/nu-goodies.git"
     numd: "https://github.com/nushell-prophet/numd.git"
-    nushell-kv: "https://github.com/nushell-prophet/nu-kv.git"
+    nu-kv: "https://github.com/nushell-prophet/nu-kv.git"
     topiary-nushell: "https://github.com/blindFS/topiary-nushell.git"
 }
 
