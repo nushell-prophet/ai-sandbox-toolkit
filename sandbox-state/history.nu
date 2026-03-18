@@ -1,7 +1,7 @@
 const history_db = '~/.config/nushell/history.sqlite3'
 const history_columns = "command_line, cwd, start_timestamp, duration_ms, exit_status"
 const sandbox_state_dir = '~/workspace/mounted/sandbox-state'
-const seed_file = path self | path dirname | path join 'history-seed.nuon'
+const seed_file = path self | path dirname | path join .. history-seed.nuon
 
 def sandbox-state-path [filename: string]: nothing -> path {
     let dir = $sandbox_state_dir | path expand
