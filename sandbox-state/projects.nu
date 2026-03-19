@@ -7,8 +7,6 @@ def sandbox-state-path [filename: string]: nothing -> path {
     $dir | path join $filename
 }
 
-export def main [] { help projects }
-
 # Export Claude Code project sessions to sandbox-state for preservation.
 #
 # Copies ~/.claude/projects/ into ~/workspace/mounted/sandbox-state/projects/.

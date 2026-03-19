@@ -1,5 +1,3 @@
-export def main [] { help install }
-
 # Install Rust via rustup
 export def rust [] {
     use rust.nu [install]; install

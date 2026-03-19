@@ -10,8 +10,6 @@ def non-git-subdirs []: nothing -> list<string> {
     | get name
 }
 
-export def main [] { help mount }
-
 # Idempotent git init for multi-repo workspaces.
 # Registers git subdirs as submodules, ignores non-git subdirs.
 # Safe to re-run after adding new dirs.

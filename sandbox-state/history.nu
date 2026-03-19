@@ -9,8 +9,6 @@ def sandbox-state-path [filename: string]: nothing -> path {
     $dir | path join $filename
 }
 
-export def main [] { help history }
-
 # Seed nushell history with useful commands from the bundled seed file.
 #
 # Initializes the history database if needed, then imports history-seed.nuon
